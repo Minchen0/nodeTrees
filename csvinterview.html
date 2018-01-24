@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <p>Select local CSV File:</p>
+    <input id="csv" type="file">
+    <script>
+        let fileInput = document.getElementById("csv");
+        let finalResult = [];
+
+        function readFile() {
+            let reader = new FileReader();
+            reader.onload = function () {
+                initApp(reader.result);
+            };
+            // start reading the file. When it is done, calls the onload event defined above.
+            reader.readAsBinaryString(fileInput.files[0]);
+        };
+
+        fileInput.addEventListener('change', readFile);
+
+        function initApp(fileContent) {
+            let results = fileContent.split("\n").slice(1);
+            let tree = createTree(results);
+            let root = createTree(results)['1'];
+            traverse(root, function (node) {
+                finalResult.unshift(node.name + " amount: " + node.total + '\n');
+            })
+            console.log(finalResult.join(""));
+           // remove(root, '563');
+            add(root, new Node('1111111', '1111111', '1', '100'));
+            traverse(root, function (node) {
+                finalResult.unshift(node.name + " amount: " + node.total + '\n');
+            })
+            console.log(finalResult.join(""));
+        }
+
+        function remove(root, idToRemove) {
+            
+            // let nodeToRemove = tree[idToRemove];
+            let nodeToRemove = null;
+            let parentNode = null;
+
+            traverse(root, function (node) {
+                if (node.id == idToRemove) {
+                    nodeToRemove = node;
+                    return;
+                }
+            });
+
+            if (!nodeToRemove) {
+                throw new Error('Node does not exist.');
+                return;
+            }
+
+            traverse(root, function (node) {
+                if (node.id == nodeToRemove.parentId) {
+                    parentNode = node;
+                    return;
+                }
+            });
+
+
+            if (!parentNode) {
+                throw new Error('Parent does not exist.');
+                return;
+            }
+
+            if (parentNode) {
+                let index = findIndexById(parentNode.children, idToRemove);
+                if (index === undefined) {
+                    throw new Error('Node to remove does not exist.');
+                } else {
+                    parentNode.children.splice(index, 1);
+                }
+            }
+
+            return nodeToRemove;
+
+        }
+
+
+        function findIndexById(arr, id) {
+            let index;
+
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i].id === id) {
+                    index = i;
+                }
+            }
+            return index;
+        }
+
+        function add(root,child) {
+            let parentNode = null;
+            traverse(root, function (node) {
+                if (node.id == child.parentId) {
+                    parentNode = node;
+                    return;
+                }
+            });
+
+            if (parentNode) {
+                parentNode.children.push(child);
+            } else {
+                throw new Error('Cannot add node to a non-existent parent.');
+            }
+        }
+       
+        function traverse(node, callback) {
+
+       
+            node.total = node.amount;
+            for (let index = 0; index < node.children.length; index++) {
+                const element = node.children[index];
+                node.total += traverse(element, callback);
+            }
+            callback(node);
+            return node.total;
+        }
+
+      
+
+
+        function createTree(results) {
+            let tree = {};
+            for (let i = 0; i < results.length; i++) {
+                if (results[i].length > 0) {
+                    const elementArr = results[i].split(",");
+                    let id = elementArr[0];
+                    let name = elementArr[1];
+                    let parentId = elementArr[2];
+                    let amount = elementArr[3];
+
+                    if (tree[id]) {
+                        tree[id].id = id;
+                        tree[id].name = name;
+                        tree[id].parentId = parentId;
+                        tree[id].amount = amount;
+
+                    } else {
+                        tree[id] = new Node(id, name, parentId, amount);
+                    }
+
+                    if (parentId != id) {
+                        if (tree[parentId]) {
+                            tree[parentId].children.push(tree[id]);
+                        } else {
+                            tree[parentId] = {};
+                            tree[parentId].children = [tree[id]];
+                        }
+                    }
+
+                }
+            }
+            return tree;
+        }
+
+        function Node(id, name, parentId, amount) {
+            this.id = id;
+            this.name = name;
+            this.parentId = parentId;
+            this.amount = parseFloat(amount);
+
+            this.children = [];
+        }
+    </script>
+</body>
+
+</html>
